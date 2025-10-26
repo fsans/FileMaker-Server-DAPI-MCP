@@ -285,6 +285,52 @@ class FileMakerAPIClient {
     );
     return response.data;
   }
+
+  // Scripts
+  async executeScript(
+    layout: string,
+    scriptName: string,
+    scriptParameter?: string,
+    database?: string
+  ): Promise<any> {
+    const db = database || this.database;
+    const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/script/${scriptName}`;
+
+    const params: any = {};
+    if (scriptParameter !== undefined) {
+      params["script.param"] = scriptParameter;
+    }
+
+    const response = await this.axiosInstance.get(url, {
+      headers: this.getHeaders(),
+      params: params,
+    });
+    return response.data;
+  }
+
+  // Container Fields with Repetition
+  async uploadToContainerWithRepetition(
+    layout: string,
+    recordId: string | number,
+    containerFieldName: string,
+    repetition: number,
+    filePath: string,
+    database?: string
+  ): Promise<any> {
+    const db = database || this.database;
+    const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/records/${recordId}/${containerFieldName}/${repetition}`;
+
+    const formData = new FormData();
+    formData.append("upload", fs.createReadStream(filePath));
+
+    const response = await this.axiosInstance.post(url, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+    return response.data;
+  }
 }
 
 // MCP Server
@@ -624,6 +670,67 @@ const tools: Tool[] = [
       required: ["globalFields"],
     },
   },
+  // Scripts
+  {
+    name: "fm_execute_script",
+    description: "Execute a FileMaker script from a specific layout",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layout: {
+          type: "string",
+          description: "Layout name",
+        },
+        scriptName: {
+          type: "string",
+          description: "Name of the script to execute",
+        },
+        scriptParameter: {
+          type: "string",
+          description: "Optional parameter to pass to the script",
+        },
+        database: {
+          type: "string",
+          description: "Database name (optional, uses default from session if not provided)",
+        },
+      },
+      required: ["layout", "scriptName"],
+    },
+  },
+  {
+    name: "fm_upload_to_container_repetition",
+    description: "Upload a file to a container field with repetition",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layout: {
+          type: "string",
+          description: "Layout name",
+        },
+        recordId: {
+          type: ["string", "number"],
+          description: "Record ID",
+        },
+        containerFieldName: {
+          type: "string",
+          description: "Name of the container field",
+        },
+        repetition: {
+          type: "number",
+          description: "Repetition number (1-based index)",
+        },
+        filePath: {
+          type: "string",
+          description: "Path to the file to upload",
+        },
+        database: {
+          type: "string",
+          description: "Database name (optional, uses default from session if not provided)",
+        },
+      },
+      required: ["layout", "recordId", "containerFieldName", "repetition", "filePath"],
+    },
+  },
 ];
 
 // List tools handler
@@ -806,6 +913,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "fm_set_global_fields": {
         const result = await client.setGlobalFields(
           args.globalFields as Record<string, any>,
+          args.database as string
+        );
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      // Scripts
+      case "fm_execute_script": {
+        const result = await client.executeScript(
+          args.layout as string,
+          args.scriptName as string,
+          args.scriptParameter as string,
+          args.database as string
+        );
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case "fm_upload_to_container_repetition": {
+        const result = await client.uploadToContainerWithRepetition(
+          args.layout as string,
+          args.recordId as string | number,
+          args.containerFieldName as string,
+          args.repetition as number,
+          args.filePath as string,
           args.database as string
         );
         return {

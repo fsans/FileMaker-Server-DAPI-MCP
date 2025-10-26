@@ -7,9 +7,14 @@ A Model Context Protocol (MCP) server that provides access to FileMaker database
 - **Authentication**: Login, logout, and session validation
 - **Metadata**: Access database, layout, and script information
 - **Records**: Create, read, update, delete, duplicate, and find records
-- **Container Fields**: Upload files to container fields
+- **Container Fields**: Upload files to container fields (including repetitions)
 - **Global Fields**: Set global field values
+- **Scripts**: Execute FileMaker scripts with parameters
 - **Portal Data**: Access related records through portals
+
+## Version
+
+This server implements **FileMaker Data API version 1.0.3** compatible with **FileMaker Server 2025**.
 
 ## Prerequisites
 
@@ -144,11 +149,21 @@ Add this server to your Claude Desktop configuration file:
 - **fm_upload_to_container**: Upload a file to a container field
   - Parameters: `layout` (required), `recordId` (required), `containerFieldName` (required), `filePath` (required), `database` (optional)
 
+- **fm_upload_to_container_repetition**: Upload a file to a container field with repetition
+  - Parameters: `layout` (required), `recordId` (required), `containerFieldName` (required), `repetition` (required), `filePath` (required), `database` (optional)
+  - Example: `{"layout": "Documents", "recordId": "123", "containerFieldName": "Files", "repetition": 2, "filePath": "/path/to/file.pdf"}`
+
 ### Global Fields
 
 - **fm_set_global_fields**: Set global field values
   - Parameters: `globalFields` (required), `database` (optional)
   - Example: `{"globalFields": {"SAMPLE": "test"}}`
+
+### Scripts
+
+- **fm_execute_script**: Execute a FileMaker script
+  - Parameters: `layout` (required), `scriptName` (required), `scriptParameter` (optional), `database` (optional)
+  - Example: `{"layout": "Contacts", "scriptName": "UpdateRecords", "scriptParameter": "param1"}`
 
 ## Example Workflow with Claude
 
