@@ -25,21 +25,25 @@ This server implements **FileMaker Data API version 1.0.3** compatible with **Fi
 ## Installation
 
 1. Clone or download this repository:
+
 ```bash
 cd FMDAPI-MCP
 ```
 
-2. Install dependencies:
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Create a `.env` file based on `.env.example`:
+1. Create a `.env` file based on `.env.example`:
+
 ```bash
 cp .env.example .env
 ```
 
-4. Edit `.env` with your FileMaker Server configuration:
+1. Edit `.env` with your FileMaker Server configuration:
+
 ```env
 FM_SERVER=192.168.0.24
 FM_VERSION=vLatest
@@ -48,7 +52,8 @@ FM_USER=admin
 FM_PASSWORD=your_password
 ```
 
-5. Build the TypeScript code:
+1. Build the TypeScript code:
+
 ```bash
 npm run build
 ```
@@ -58,11 +63,13 @@ npm run build
 ### Running the Server
 
 Start the MCP server:
+
 ```bash
 npm start
 ```
 
 Or for development with auto-rebuild:
+
 ```bash
 npm run watch
 ```
@@ -168,31 +175,36 @@ Add this server to your Claude Desktop configuration file:
 ## Example Workflow with Claude
 
 1. **Authenticate**:
-   ```
+
+   ```text
    Use fm_login to connect to the FileMaker database
    ```
 
 2. **Explore the Database**:
-   ```
+
+   ```text
    Use fm_get_layouts to see available layouts
    Use fm_get_layout_metadata with layout "Contacts" to see the fields
    ```
 
 3. **Query Records**:
-   ```
+
+   ```text
    Use fm_get_records with layout "Contacts" to get all contacts
    Use fm_find_records to search for specific records
    ```
 
 4. **Modify Data**:
-   ```
+
+   ```text
    Use fm_create_record to add a new contact
    Use fm_edit_record to update an existing contact
    Use fm_delete_record to remove a contact
    ```
 
 5. **Clean Up**:
-   ```
+
+   ```text
    Use fm_logout to end the session
    ```
 

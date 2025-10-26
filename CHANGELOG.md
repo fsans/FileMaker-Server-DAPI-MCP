@@ -9,6 +9,7 @@ This version has been updated to match the official FileMaker Data API specifica
 ### New Features
 
 #### 1. Script Execution
+
 - **Tool**: `fm_execute_script`
 - **Description**: Execute FileMaker scripts directly from layouts
 - **Parameters**:
@@ -17,6 +18,7 @@ This version has been updated to match the official FileMaker Data API specifica
   - `scriptParameter` (optional): Parameter to pass to the script
   - `database` (optional): Database name
 - **Example**:
+
   ```json
   {
     "layout": "Contacts",
@@ -26,6 +28,7 @@ This version has been updated to match the official FileMaker Data API specifica
   ```
 
 #### 2. Container Field Upload with Repetitions
+
 - **Tool**: `fm_upload_to_container_repetition`
 - **Description**: Upload files to container fields that support repetitions
 - **Parameters**:
@@ -36,6 +39,7 @@ This version has been updated to match the official FileMaker Data API specifica
   - `filePath` (required): Path to the file to upload
   - `database` (optional): Database name
 - **Example**:
+
   ```json
   {
     "layout": "Documents",
@@ -51,11 +55,13 @@ This version has been updated to match the official FileMaker Data API specifica
 The MCP server now implements **20 tools** covering all major FileMaker Data API endpoints:
 
 #### Authentication (3 tools)
+
 - fm_login
 - fm_logout
 - fm_validate_session
 
 #### Metadata (5 tools)
+
 - fm_get_product_info
 - fm_get_databases
 - fm_get_layouts
@@ -63,6 +69,7 @@ The MCP server now implements **20 tools** covering all major FileMaker Data API
 - fm_get_layout_metadata
 
 #### Records (7 tools)
+
 - fm_get_records
 - fm_get_record_by_id
 - fm_create_record
@@ -72,18 +79,22 @@ The MCP server now implements **20 tools** covering all major FileMaker Data API
 - fm_find_records
 
 #### Container Fields (2 tools)
+
 - fm_upload_to_container
 - fm_upload_to_container_repetition ✨ **NEW**
 
 #### Global Fields (1 tool)
+
 - fm_set_global_fields
 
 #### Scripts (1 tool)
+
 - fm_execute_script ✨ **NEW**
 
 ### Technical Details
 
 #### API Client Methods Added
+
 ```typescript
 // Execute FileMaker scripts
 async executeScript(
@@ -132,6 +143,7 @@ When upgrading to this version, test:
 ### Future Enhancements
 
 Potential features for future versions:
+
 - Script execution with pre-sort and pre-request scripts
 - Enhanced error handling for script results
 - Support for portal record operations via scripts
