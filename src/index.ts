@@ -15,6 +15,13 @@ import fs from "fs";
 
 dotenv.config();
 
+// Interface for external database credentials
+interface ExternalDatabase {
+  database: string;
+  username: string;
+  password: string;
+}
+
 // FileMaker API Client
 class FileMakerAPIClient {
   private baseUrl: string;
@@ -22,6 +29,7 @@ class FileMakerAPIClient {
   private database: string;
   private username: string;
   private password: string;
+  private externalDatabases: ExternalDatabase[] = [];
   private token: string | null = null;
   private axiosInstance: AxiosInstance;
 
@@ -31,6 +39,28 @@ class FileMakerAPIClient {
     this.database = process.env.FM_DATABASE || "";
     this.username = process.env.FM_USER || "";
     this.password = process.env.FM_PASSWORD || "";
+
+    // Parse external databases from environment variable
+    if (process.env.FM_EXTERNAL_DATABASES) {
+      try {
+        this.externalDatabases = JSON.parse(process.env.FM_EXTERNAL_DATABASES);
+        // Validate that each external database has required fields
+        this.externalDatabases = this.externalDatabases.filter((db) => {
+          if (!db.database || !db.username || !db.password) {
+            console.warn(
+              `Skipping invalid external database entry: ${JSON.stringify(db)}`
+            );
+            return false;
+          }
+          return true;
+        });
+      } catch (error) {
+        console.warn(
+          `Failed to parse FM_EXTERNAL_DATABASES: ${error instanceof Error ? error.message : String(error)}`
+        );
+        this.externalDatabases = [];
+      }
+    }
 
     // Create axios instance with SSL verification disabled (optional, for development)
     this.axiosInstance = axios.create({
@@ -51,7 +81,12 @@ class FileMakerAPIClient {
   }
 
   // Authentication
-  async login(database?: string, username?: string, password?: string): Promise<any> {
+  async login(
+    database?: string,
+    username?: string,
+    password?: string,
+    fmDataSource?: ExternalDatabase[]
+  ): Promise<any> {
     const db = database || this.database;
     const user = username || this.username;
     const pass = password || this.password;
@@ -59,16 +94,19 @@ class FileMakerAPIClient {
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/sessions`;
     const auth = Buffer.from(`${user}:${pass}`).toString("base64");
 
-    const response = await this.axiosInstance.post(
-      url,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
+    // Build request body with external databases if available
+    const requestBody: any = {};
+    const externalDBs = fmDataSource || this.externalDatabases;
+    if (externalDBs && externalDBs.length > 0) {
+      requestBody.fmDataSource = externalDBs;
+    }
+
+    const response = await this.axiosInstance.post(url, requestBody, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${auth}`,
+      },
+    });
 
     this.token = response.data.response.token;
     if (database) this.database = database;
@@ -353,7 +391,7 @@ const tools: Tool[] = [
   {
     name: "fm_login",
     description:
-      "Authenticate with FileMaker Server and get a session token. Required before using most other tools.",
+      "Authenticate with FileMaker Server and get a session token. Required before using most other tools. External database credentials can be configured via .env (FM_EXTERNAL_DATABASES) or passed as fmDataSource parameter.",
     inputSchema: {
       type: "object",
       properties: {
@@ -368,6 +406,29 @@ const tools: Tool[] = [
         password: {
           type: "string",
           description: "Password (optional, uses default from .env if not provided)",
+        },
+        fmDataSource: {
+          type: "array",
+          description:
+            "Array of external database credentials (optional, overrides FM_EXTERNAL_DATABASES from .env). Each object must contain: database, username, password",
+          items: {
+            type: "object",
+            properties: {
+              database: {
+                type: "string",
+                description: "External database name",
+              },
+              username: {
+                type: "string",
+                description: "Username for the external database",
+              },
+              password: {
+                type: "string",
+                description: "Password for the external database",
+              },
+            },
+            required: ["database", "username", "password"],
+          },
         },
       },
     },
@@ -753,7 +814,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await client.login(
           args.database as string,
           args.username as string,
-          args.password as string
+          args.password as string,
+          args.fmDataSource as ExternalDatabase[]
         );
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

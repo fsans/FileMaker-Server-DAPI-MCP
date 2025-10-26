@@ -52,6 +52,15 @@ FM_USER=admin
 FM_PASSWORD=your_password
 ```
 
+1. (Optional) Configure external database credentials if you need to access FileMaker External Database Sources:
+
+```env
+FM_EXTERNAL_DATABASES='[
+  {"database":"SalesDB","username":"sales_user","password":"sales_password"},
+  {"database":"InventoryDB","username":"inventory_user","password":"inventory_password"}
+]'
+```
+
 1. Build the TypeScript code:
 
 ```bash
@@ -105,7 +114,38 @@ Add this server to your Claude Desktop configuration file:
 ### Authentication
 
 - **fm_login**: Authenticate with FileMaker Server and get a session token
-  - Parameters: `database` (optional), `username` (optional), `password` (optional)
+  - Parameters: `database` (optional), `username` (optional), `password` (optional), `fmDataSource` (optional)
+  - For external databases (FileMaker External Database Sources), you can configure credentials in two ways:
+
+    **Option 1: Configure in .env file** (recommended for persistent configuration):
+
+    ```env
+    FM_EXTERNAL_DATABASES='[
+      {"database":"SalesDB","username":"sales_user","password":"sales_password"},
+      {"database":"InventoryDB","username":"inventory_user","password":"inventory_password"}
+    ]'
+    ```
+
+    **Option 2: Pass via fmDataSource parameter** (for dynamic/temporary credentials):
+
+    ```json
+    {
+      "fmDataSource": [
+        {
+          "database": "SalesDB",
+          "username": "sales_user",
+          "password": "sales_password"
+        },
+        {
+          "database": "InventoryDB",
+          "username": "inventory_user",
+          "password": "inventory_password"
+        }
+      ]
+    }
+    ```
+
+    **Note**: External database credentials passed via `fmDataSource` parameter override those configured in the `.env` file.
 
 - **fm_logout**: End the current FileMaker Server session
 
