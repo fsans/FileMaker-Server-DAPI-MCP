@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Agent label (must match filename) -->
+    <key>Label</key>
+    <string>com.filemaker.mcp</string>
+
+    <!-- Program to run -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/fsans/.nvm/versions/node/v22.15.0/bin/node</string>
+        <string>/Users/fsans/Desktop/FMDAPI-MCP/dist/index.js</string>
+    </array>
+
+    <!-- Environment variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- IMPORTANT: Replace these values with your actual configuration -->
+        <key>FM_SERVER</key>
+        <string>192.168.0.24</string>
+        <key>FM_VERSION</key>
+        <string>vLatest</string>
+        <key>FM_DATABASE</key>
+        <string>Contacts</string>
+        <key>FM_USER</key>
+        <string>admin</string>
+        <key>FM_PASSWORD</key>
+        <string>your_password</string>
+        <!-- Optional: For HTTP/HTTPS transport mode -->
+        <!-- <key>TRANSPORT</key>
+        <string>HTTP</string> -->
+        <!-- Optional: For external database sources -->
+        <!-- <key>FM_EXTERNAL_DATABASES</key>
+        <string>[{"database":"SalesDB","username":"user","password":"pass"}]</string> -->
+    </dict>
+
+    <!-- Working directory -->
+    <key>WorkingDirectory</key>
+    <string>/Users/fsans/Desktop/FMDAPI-MCP</string>
+
+    <!-- Run at load -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Keep alive - restart if it crashes -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Standard output log -->
+    <key>StandardOutPath</key>
+    <string>/Users/fsans/Desktop/FMDAPI-MCP/logs/mcp-server.log</string>
+
+    <!-- Standard error log -->
+    <key>StandardErrorPath</key>
+    <string>/Users/fsans/Desktop/FMDAPI-MCP/logs/mcp-server-error.log</string>
+</dict>
+</plist>
