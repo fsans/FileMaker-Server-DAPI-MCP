@@ -81,6 +81,79 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 # When prompted, you can enter your details or just press Enter for defaults
 ```
 
+## Build & Test
+
+### Build the Project
+
+```bash
+npm install
+npm run build
+```
+
+This compiles TypeScript to JavaScript in the `dist/` directory.
+
+### Quick HTTP Test
+
+```bash
+# Start HTTP server
+MCP_TRANSPORT=http npm run start
+
+# In another terminal, run these tests:
+
+# 1. Health check
+curl http://localhost:3000/health
+
+# 2. Server info
+curl http://localhost:3000/mcp
+
+# 3. MCP endpoint
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"method":"test"}'
+```
+
+**Expected responses:**
+- Health: `{"status":"ok","transport":"http"}`
+- Info: `{"info":"FileMaker Data API MCP Server","transport":"http","methods":["POST"],"endpoint":"/mcp"}`
+- MCP: `{"status":"ok","message":"MCP request received","request":{"method":"test"}}`
+
+### Full Integration Test Script
+
+```bash
+#!/bin/bash
+
+# Start server in background
+MCP_TRANSPORT=http npm run start &
+SERVER_PID=$!
+
+# Wait for startup
+sleep 2
+
+echo "Testing health endpoint..."
+curl -s http://localhost:3000/health | jq .
+
+echo -e "\nTesting server info..."
+curl -s http://localhost:3000/mcp | jq .
+
+echo -e "\nTesting MCP POST..."
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"method":"test"}' | jq .
+
+# Cleanup
+kill $SERVER_PID
+```
+
+### Verify Server is Listening
+
+```bash
+# Check if port 3000 is listening
+lsof -i :3000
+
+# Or with netstat
+netstat -an | grep 3000
+```
+
 ## Endpoints
 
 ### HTTP/HTTPS Endpoints
@@ -88,21 +161,18 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 When running in HTTP or HTTPS mode, the following endpoints are available:
 
 - **GET /health** - Health check endpoint
-
   ```bash
   curl http://localhost:3000/health
   # Response: {"status":"ok","transport":"http"}
   ```
 
 - **GET /mcp** - Server information
-
   ```bash
   curl http://localhost:3000/mcp
   # Response: {"info":"FileMaker Data API MCP Server","transport":"http","methods":["POST"],"endpoint":"/mcp"}
   ```
 
 - **POST /mcp** - MCP request handler
-
   ```bash
   curl -X POST http://localhost:3000/mcp \
     -H "Content-Type: application/json" \
