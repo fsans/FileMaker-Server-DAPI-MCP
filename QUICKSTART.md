@@ -30,16 +30,87 @@ npm install
 npm run build
 ```
 
+This compiles TypeScript to JavaScript in the `dist/` directory.
+
 ## 2. Test the Server (Optional)
 
-You can test the server manually:
+### Test with Stdio (Default - Local)
 ```bash
-npm start
+npm run start
 ```
 
 To stop testing, press `Ctrl+C`.
 
-## 3. Configure Claude Desktop
+### Test with HTTP (Network)
+
+**Build and start HTTP server:**
+```bash
+npm run build
+MCP_TRANSPORT=http npm run start
+```
+
+**In another terminal, verify it's working:**
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Server info
+curl http://localhost:3000/mcp
+
+# Test MCP endpoint
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"method":"test"}'
+```
+
+**Expected responses:**
+- Health: `{"status":"ok","transport":"http"}`
+- Info: `{"info":"FileMaker Data API MCP Server","transport":"http","methods":["POST"],"endpoint":"/mcp"}`
+- MCP: `{"status":"ok","message":"MCP request received","request":{"method":"test"}}`
+
+### Test with HTTPS (Secure Network)
+
+**Generate self-signed certificate (development only):**
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+```
+
+**Start HTTPS server:**
+```bash
+npm run build
+MCP_TRANSPORT=https MCP_CERT_PATH=./cert.pem MCP_KEY_PATH=./key.pem npm run start
+```
+
+**Test HTTPS endpoint:**
+```bash
+# Skip certificate verification for self-signed certs
+curl -k https://localhost:3443/health
+```
+
+## 3. Production Deployment (HTTP/HTTPS)
+
+For network deployment, configure environment variables and start with your chosen transport:
+
+**HTTP (Development/Testing):**
+```bash
+npm run build
+MCP_TRANSPORT=http MCP_HOST=0.0.0.0 MCP_PORT=3000 npm run start
+```
+
+**HTTPS (Production):**
+```bash
+npm run build
+MCP_TRANSPORT=https \
+  MCP_HOST=0.0.0.0 \
+  MCP_PORT=3443 \
+  MCP_CERT_PATH=/etc/ssl/certs/your-cert.pem \
+  MCP_KEY_PATH=/etc/ssl/private/your-key.pem \
+  npm run start
+```
+
+See [NETWORK_TRANSPORT.md](NETWORK_TRANSPORT.md) for detailed network configuration and Docker deployment.
+
+## 4. Configure Claude Desktop
 
 ### macOS
 Edit: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -68,11 +139,11 @@ Add this configuration (replace `/absolute/path/to/` with your actual path):
 
 **Important**: Use the absolute path to the `dist/index.js` file!
 
-## 4. Restart Claude Desktop
+## 5. Restart Claude Desktop
 
 After saving the configuration, completely quit and restart Claude Desktop.
 
-## 5. Verify Installation
+## 6. Verify Installation
 
 In Claude Desktop, try these commands:
 

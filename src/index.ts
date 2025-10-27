@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -12,6 +11,7 @@ import https from "https";
 import * as dotenv from "dotenv";
 import FormData from "form-data";
 import fs from "fs";
+import { setupTransport, getTransportConfig } from "./transport.js";
 
 dotenv.config();
 
@@ -1027,9 +1027,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start server
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("FileMaker Data API MCP Server running on stdio");
+  const config = getTransportConfig();
+  console.error(`Starting FileMaker Data API MCP Server with ${config.type} transport...`);
+  await setupTransport(server, config);
 }
 
 main().catch((error) => {
