@@ -12,6 +12,9 @@ import * as dotenv from "dotenv";
 import FormData from "form-data";
 import fs from "fs";
 import { setupTransport, getTransportConfig } from "./transport.js";
+import { getConnectionManager } from "./connection.js";
+import { configurationTools, configurationToolHandlers } from "./tools/configuration.js";
+import { connectionTools, connectionToolHandlers } from "./tools/connection.js";
 
 dotenv.config();
 
@@ -387,6 +390,10 @@ const server = new Server(
 
 // Define tools
 const tools: Tool[] = [
+  // Configuration Tools
+  ...configurationTools,
+  // Connection Tools
+  ...connectionTools,
   // Authentication
   {
     name: "fm_login",
@@ -808,8 +815,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw new Error("No arguments provided");
     }
 
+    // Handle configuration tools
+    if (name.startsWith("fm_config_")) {
+      const handler = configurationToolHandlers[name];
+      if (handler) {
+        const result = await handler(args);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+    }
+
+    // Handle connection tools
+    if (name.startsWith("fm_set_connection") || name === "fm_connect" || name === "fm_list_connections" || name === "fm_get_current_connection") {
+      const handler = connectionToolHandlers[name];
+      if (handler) {
+        const result = await handler(args);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+    }
+
     switch (name) {
       // Authentication
+      /**
+       * Handler: fm_login
+       * Authenticates with FileMaker Server and establishes a session token.
+       * Supports optional external database credentials for cross-database authentication.
+       *
+       * @param {string} [args.database] - Database name (uses default from .env if not provided)
+       * @param {string} [args.username] - Username (uses default from .env if not provided)
+       * @param {string} [args.password] - Password (uses default from .env if not provided)
+       * @param {ExternalDatabase[]} [args.fmDataSource] - External database credentials array
+       * @returns {Promise<Object>} Session token and authentication response
+       */
       case "fm_login": {
         const result = await client.login(
           args.database as string,
@@ -822,6 +862,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_logout
+       * Ends the current FileMaker Server session and invalidates the session token.
+       *
+       * @returns {Promise<Object>} Logout confirmation response
+       * @throws {Error} If no active session exists
+       */
       case "fm_logout": {
         const result = await client.logout();
         return {
@@ -829,6 +876,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_validate_session
+       * Validates if the current session token is still active and valid.
+       *
+       * @returns {Promise<Object>} Session validation status
+       */
       case "fm_validate_session": {
         const result = await client.validateSession();
         return {
@@ -837,6 +890,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Metadata
+      /**
+       * Handler: fm_get_product_info
+       * Retrieves FileMaker Server product information including version, date/time formats, and capabilities.
+       *
+       * @returns {Promise<Object>} Server product information and metadata
+       */
       case "fm_get_product_info": {
         const result = await client.getProductInfo();
         return {
@@ -844,6 +903,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_get_databases
+       * Lists all databases available on the FileMaker Server.
+       *
+       * @returns {Promise<Object>} Array of database names
+       */
       case "fm_get_databases": {
         const result = await client.getDatabases();
         return {
@@ -851,6 +916,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_get_layouts
+       * Retrieves all layouts available in a specified database.
+       *
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Array of layout names and metadata
+       */
       case "fm_get_layouts": {
         const result = await client.getLayouts(args.database as string);
         return {
@@ -858,6 +930,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_get_scripts
+       * Retrieves all scripts available in a specified database.
+       *
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Array of script names and metadata
+       */
       case "fm_get_scripts": {
         const result = await client.getScripts(args.database as string);
         return {
@@ -865,6 +944,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_get_layout_metadata
+       * Retrieves detailed metadata for a specific layout including field definitions,
+       * value lists, and portal information.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Layout metadata including field definitions and properties
+       */
       case "fm_get_layout_metadata": {
         const result = await client.getLayoutMetadata(
           args.layout as string,
@@ -876,6 +964,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Records
+      /**
+       * Handler: fm_get_records
+       * Retrieves a paginated set of records from a specified layout.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {number} [args.offset=1] - Starting record position (default: 1)
+       * @param {number} [args.limit=20] - Number of records to return (default: 20)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Array of records with field data
+       */
       case "fm_get_records": {
         const result = await client.getRecords(
           args.layout as string,
@@ -888,6 +986,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_get_record_by_id
+       * Retrieves a single record by its unique recordId.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Single record with field data
+       */
       case "fm_get_record_by_id": {
         const result = await client.getRecordById(
           args.layout as string,
@@ -899,6 +1006,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_create_record
+       * Creates a new record in the specified layout with the provided field data.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {Object} args.fieldData - Field data as key-value pairs (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Created record with new recordId
+       */
       case "fm_create_record": {
         const result = await client.createRecord(
           args.layout as string,
@@ -910,6 +1026,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_edit_record
+       * Updates an existing record with new field data. Only specified fields are updated.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID (required)
+       * @param {Object} args.fieldData - Field data to update as key-value pairs (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Updated record confirmation
+       */
       case "fm_edit_record": {
         const result = await client.editRecord(
           args.layout as string,
@@ -922,6 +1048,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_delete_record
+       * Permanently deletes a record from the database.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Deletion confirmation
+       */
       case "fm_delete_record": {
         const result = await client.deleteRecord(
           args.layout as string,
@@ -933,6 +1068,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_duplicate_record
+       * Creates an exact duplicate of an existing record with a new recordId.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID to duplicate (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Duplicated record with new recordId
+       */
       case "fm_duplicate_record": {
         const result = await client.duplicateRecord(
           args.layout as string,
@@ -944,6 +1088,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_find_records
+       * Searches for records matching the specified query criteria with pagination support.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {Array<Object>} args.query - Array of search criteria objects (required)
+       * @param {number} [args.offset] - Starting record position
+       * @param {number} [args.limit] - Number of records to return
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Array of matching records
+       */
       case "fm_find_records": {
         const result = await client.findRecords(
           args.layout as string,
@@ -958,6 +1113,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Container Fields
+      /**
+       * Handler: fm_upload_to_container
+       * Uploads a file to a container field in a specific record.
+       * Supports images, PDFs, and other file types.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID (required)
+       * @param {string} args.containerFieldName - Name of the container field (required)
+       * @param {string} args.filePath - Local file path to upload (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Upload confirmation
+       */
       case "fm_upload_to_container": {
         const result = await client.uploadToContainer(
           args.layout as string,
@@ -972,6 +1139,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Global Fields
+      /**
+       * Handler: fm_set_global_fields
+       * Sets values for global fields in the database. Global fields persist
+       * for the duration of the session and are shared across all layouts.
+       *
+       * @param {Object} args.globalFields - Global fields as key-value pairs (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Update confirmation
+       */
       case "fm_set_global_fields": {
         const result = await client.setGlobalFields(
           args.globalFields as Record<string, any>,
@@ -983,6 +1159,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Scripts
+      /**
+       * Handler: fm_execute_script
+       * Executes a FileMaker script and optionally passes a parameter to it.
+       * The script must exist in the specified database and be accessible from the layout.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string} args.scriptName - Name of the script to execute (required)
+       * @param {string} [args.scriptParameter] - Optional parameter to pass to the script
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Script result including any return value
+       */
       case "fm_execute_script": {
         const result = await client.executeScript(
           args.layout as string,
@@ -995,6 +1182,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      /**
+       * Handler: fm_upload_to_container_repetition
+       * Uploads a file to a specific repetition of a repeating container field.
+       * Used for container fields with multiple repetitions.
+       *
+       * @param {string} args.layout - Layout name (required)
+       * @param {string|number} args.recordId - FileMaker internal record ID (required)
+       * @param {string} args.containerFieldName - Name of the container field (required)
+       * @param {number} args.repetition - Repetition number (1-based index) (required)
+       * @param {string} args.filePath - Local file path to upload (required)
+       * @param {string} [args.database] - Database name (uses default from session if not provided)
+       * @returns {Promise<Object>} Upload confirmation
+       */
       case "fm_upload_to_container_repetition": {
         const result = await client.uploadToContainerWithRepetition(
           args.layout as string,
