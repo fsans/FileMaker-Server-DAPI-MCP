@@ -30,16 +30,16 @@
     "claude",
     "claude-desktop"
   ],
-  "author": "Your Name",
+  "author": "Francesc Sans <fsans@ntwk.es>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/filemaker-data-api-mcp"
+    "url": "https://github.com/fsans/FileMaker-Server-DAPI-MCP"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/filemaker-data-api-mcp/issues"
+    "url": "https://github.com/fsans/FileMaker-Server-DAPI-MCP/issues"
   },
-  "homepage": "https://github.com/yourusername/filemaker-data-api-mcp#readme",
+  "homepage": "https://github.com/fsans/FileMaker-Server-DAPI-MCP#readme",
   "engines": {
     "node": ">=18.0.0"
   },
