@@ -15,6 +15,7 @@ import { setupTransport, getTransportConfig } from "./transport.js";
 import { getConnectionManager } from "./connection.js";
 import { configurationTools, configurationToolHandlers } from "./tools/configuration.js";
 import { connectionTools, connectionToolHandlers } from "./tools/connection.js";
+import { loggers, logRequest, logResponse, logError, logTiming, createTimedLogger } from "./logger.js";
 
 dotenv.config();
 
@@ -37,11 +38,14 @@ class FileMakerAPIClient {
   private axiosInstance: AxiosInstance;
 
   constructor() {
+    loggers.client("Initializing FileMaker API Client");
     this.baseUrl = process.env.FM_SERVER || "";
     this.version = process.env.FM_VERSION || "vLatest";
     this.database = process.env.FM_DATABASE || "";
     this.username = process.env.FM_USER || "";
     this.password = process.env.FM_PASSWORD || "";
+
+    loggers.client(`Server: ${this.baseUrl}, Version: ${this.version}, Database: ${this.database}`);
 
     // Parse external databases from environment variable
     if (process.env.FM_EXTERNAL_DATABASES) {
@@ -90,6 +94,7 @@ class FileMakerAPIClient {
     password?: string,
     fmDataSource?: ExternalDatabase[]
   ): Promise<any> {
+    const logTiming = createTimedLogger(loggers.client, "login");
     const db = database || this.database;
     const user = username || this.username;
     const pass = password || this.password;
@@ -97,23 +102,38 @@ class FileMakerAPIClient {
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/sessions`;
     const auth = Buffer.from(`${user}:${pass}`).toString("base64");
 
+    loggers.client(`Logging in to database: ${db} as user: ${user}`);
+
     // Build request body with external databases if available
     const requestBody: any = {};
     const externalDBs = fmDataSource || this.externalDatabases;
     if (externalDBs && externalDBs.length > 0) {
       requestBody.fmDataSource = externalDBs;
+      loggers.client(`Using ${externalDBs.length} external database(s)`);
     }
 
-    const response = await this.axiosInstance.post(url, requestBody, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${auth}`,
-      },
-    });
+    logRequest(loggers.client, loggers.clientVerbose, "POST", url, requestBody);
 
-    this.token = response.data.response.token;
-    if (database) this.database = database;
-    return response.data;
+    try {
+      const response = await this.axiosInstance.post(url, requestBody, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${auth}`,
+        },
+      });
+
+      this.token = response.data.response.token;
+      if (database) this.database = database;
+
+      logResponse(loggers.client, loggers.clientVerbose, "POST", url, response.status, response.data);
+      loggers.client(`Login successful, token acquired`);
+      logTiming();
+
+      return response.data;
+    } catch (error) {
+      logError(loggers.client, "login", error);
+      throw error;
+    }
   }
 
   async logout(): Promise<any> {
@@ -121,10 +141,25 @@ class FileMakerAPIClient {
       throw new Error("No active session");
     }
 
+    const logTiming = createTimedLogger(loggers.client, "logout");
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${this.database}/sessions/${this.token}`;
-    const response = await this.axiosInstance.delete(url);
-    this.token = null;
-    return response.data;
+
+    loggers.client("Logging out and invalidating session token");
+    logRequest(loggers.client, loggers.clientVerbose, "DELETE", url);
+
+    try {
+      const response = await this.axiosInstance.delete(url);
+      this.token = null;
+
+      logResponse(loggers.client, loggers.clientVerbose, "DELETE", url, response.status, response.data);
+      loggers.client("Logout successful, token invalidated");
+      logTiming();
+
+      return response.data;
+    } catch (error) {
+      logError(loggers.client, "logout", error);
+      throw error;
+    }
   }
 
   async validateSession(): Promise<any> {
@@ -208,16 +243,31 @@ class FileMakerAPIClient {
     fieldData: Record<string, any>,
     database?: string
   ): Promise<any> {
+    const logTiming = createTimedLogger(loggers.client, "createRecord");
     const db = database || this.database;
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/records`;
-    const response = await this.axiosInstance.post(
-      url,
-      { fieldData },
-      {
-        headers: this.getHeaders(),
-      }
-    );
-    return response.data;
+
+    loggers.client(`Creating record in layout: ${layout}`);
+    logRequest(loggers.client, loggers.clientVerbose, "POST", url, { fieldData });
+
+    try {
+      const response = await this.axiosInstance.post(
+        url,
+        { fieldData },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      logResponse(loggers.client, loggers.clientVerbose, "POST", url, response.status, response.data);
+      loggers.client(`Record created with ID: ${response.data.response.recordId}`);
+      logTiming();
+
+      return response.data;
+    } catch (error) {
+      logError(loggers.client, "createRecord", error);
+      throw error;
+    }
   }
 
   async editRecord(
@@ -226,16 +276,31 @@ class FileMakerAPIClient {
     fieldData: Record<string, any>,
     database?: string
   ): Promise<any> {
+    const logTiming = createTimedLogger(loggers.client, "editRecord");
     const db = database || this.database;
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/records/${recordId}`;
-    const response = await this.axiosInstance.patch(
-      url,
-      { fieldData },
-      {
-        headers: this.getHeaders(),
-      }
-    );
-    return response.data;
+
+    loggers.client(`Editing record ${recordId} in layout: ${layout}`);
+    logRequest(loggers.client, loggers.clientVerbose, "PATCH", url, { fieldData });
+
+    try {
+      const response = await this.axiosInstance.patch(
+        url,
+        { fieldData },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      logResponse(loggers.client, loggers.clientVerbose, "PATCH", url, response.status, response.data);
+      loggers.client(`Record ${recordId} updated successfully`);
+      logTiming();
+
+      return response.data;
+    } catch (error) {
+      logError(loggers.client, "editRecord", error);
+      throw error;
+    }
   }
 
   async deleteRecord(
@@ -275,16 +340,31 @@ class FileMakerAPIClient {
     limit?: number,
     database?: string
   ): Promise<any> {
+    const logTiming = createTimedLogger(loggers.client, "findRecords");
     const db = database || this.database;
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/_find`;
     const body: any = { query };
     if (offset !== undefined) body.offset = offset;
     if (limit !== undefined) body.limit = limit;
 
-    const response = await this.axiosInstance.post(url, body, {
-      headers: this.getHeaders(),
-    });
-    return response.data;
+    loggers.client(`Finding records in layout: ${layout} with ${query.length} criteria`);
+    logRequest(loggers.client, loggers.clientVerbose, "POST", url, body);
+
+    try {
+      const response = await this.axiosInstance.post(url, body, {
+        headers: this.getHeaders(),
+      });
+
+      const recordCount = response.data.response?.data?.length || 0;
+      logResponse(loggers.client, loggers.clientVerbose, "POST", url, response.status, response.data);
+      loggers.client(`Found ${recordCount} record(s)`);
+      logTiming();
+
+      return response.data;
+    } catch (error) {
+      logError(loggers.client, "findRecords", error);
+      throw error;
+    }
   }
 
   // Container Fields
@@ -808,8 +888,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Call tool handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const startTime = Date.now();
   try {
     const { name, arguments: args } = request.params;
+
+    loggers.tools(`Tool called: ${name}`);
+    loggers.toolsVerbose(`Tool arguments:`, JSON.stringify(args, null, 2));
 
     if (!args) {
       throw new Error("No arguments provided");
@@ -817,9 +901,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     // Handle configuration tools
     if (name.startsWith("fm_config_")) {
+      loggers.tools(`Executing configuration tool: ${name}`);
       const handler = configurationToolHandlers[name];
       if (handler) {
         const result = await handler(args);
+        loggers.tools(`Configuration tool ${name} completed`);
+        logTiming(loggers.tools, name, startTime);
         return {
           content: [{ type: "text", text: result }],
         };
@@ -828,9 +915,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     // Handle connection tools
     if (name.startsWith("fm_set_connection") || name === "fm_connect" || name === "fm_list_connections" || name === "fm_get_current_connection") {
+      loggers.tools(`Executing connection tool: ${name}`);
       const handler = connectionToolHandlers[name];
       if (handler) {
         const result = await handler(args);
+        loggers.tools(`Connection tool ${name} completed`);
+        logTiming(loggers.tools, name, startTime);
         return {
           content: [{ type: "text", text: result }],
         };
@@ -1210,9 +1300,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       default:
+        loggers.tools(`Unknown tool: ${name}`);
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error: any) {
+    logError(loggers.tools, `tool execution (${request.params.name})`, error);
     return {
       content: [
         {
@@ -1228,11 +1320,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Start server
 async function main() {
   const config = getTransportConfig();
+  loggers.transport(`Starting FileMaker Data API MCP Server`);
+  loggers.transport(`Transport: ${config.type}`);
   console.error(`Starting FileMaker Data API MCP Server with ${config.type} transport...`);
   await setupTransport(server, config);
+  loggers.transport("Server started successfully");
 }
 
 main().catch((error) => {
+  logError(loggers.transport, "server startup", error);
   console.error("Fatal error:", error);
   process.exit(1);
 });

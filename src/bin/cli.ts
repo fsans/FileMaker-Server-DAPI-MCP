@@ -6,6 +6,7 @@ import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
 import { spawn } from "child_process";
+import { loggers } from "../logger.js";
 import {
   loadConfigFile,
   saveConfigFile,
@@ -121,16 +122,20 @@ ${config.security?.keyPath ? `MCP_KEY_PATH=${config.security.keyPath}` : ""}
 
 // Start the server
 function startServer(): void {
+  loggers.cli("Starting FileMaker MCP Server via CLI");
   const config = getConfig();
 
   // Validate configuration
   const validation = validateConfig(config);
   if (!validation.valid) {
+    loggers.cli("Configuration validation failed");
     console.error("❌ Configuration validation failed:");
     validation.errors.forEach((error) => console.error(`  - ${error}`));
     console.error("\nPlease run: filemaker-mcp setup");
     process.exit(1);
   }
+
+  loggers.cli("Configuration validated successfully");
 
   // Get the main server script path
   const serverScript = path.join(__dirname, "../index.js");
@@ -149,6 +154,7 @@ function startServer(): void {
     ...(config.security?.keyPath && { MCP_KEY_PATH: config.security.keyPath }),
   };
 
+  loggers.cli(`Starting server with ${config.server.transport} transport on ${config.filemaker.server}`);
   console.log(`🚀 Starting FileMaker MCP Server (${config.server.transport} transport)...`);
 
   const server = spawn("node", [serverScript], {

@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { loggers } from "./logger.js";
 
 /**
  * Represents a FileMaker database connection configuration
@@ -33,8 +34,10 @@ export class ConnectionManager {
   private connectionsFile: string;
 
   constructor(configDir: string = path.join(os.homedir(), ".filemaker-mcp")) {
+    loggers.connection("Initializing ConnectionManager");
     this.configDir = configDir;
     this.connectionsFile = path.join(configDir, "connections.json");
+    loggers.connection(`Config directory: ${configDir}`);
     this.loadConnections();
   }
 
@@ -47,11 +50,18 @@ export class ConnectionManager {
         const data = JSON.parse(fs.readFileSync(this.connectionsFile, "utf-8"));
         this.connections = new Map(Object.entries(data.connections || {}));
         this.defaultConnectionName = data.defaultConnection || null;
+        loggers.connection(`Loaded ${this.connections.size} connection(s) from ${this.connectionsFile}`);
+        if (this.defaultConnectionName) {
+          loggers.connection(`Default connection: ${this.defaultConnectionName}`);
+        }
       } catch (error) {
+        loggers.connection(`Error loading connections file: ${error instanceof Error ? error.message : String(error)}`);
         console.error("Error loading connections file:", error);
         this.connections = new Map();
         this.defaultConnectionName = null;
       }
+    } else {
+      loggers.connection("No connections file found, starting with empty connections");
     }
   }
 
@@ -128,9 +138,11 @@ export class ConnectionManager {
   switchToConnection(name: string): void {
     const connection = this.connections.get(name);
     if (!connection) {
+      loggers.connection(`Connection "${name}" not found`);
       throw new Error(`Connection "${name}" not found`);
     }
     this.currentConnection = connection;
+    loggers.connection(`Switched to connection: ${name} (${connection.database}@${connection.server})`);
   }
 
   /**
@@ -150,6 +162,7 @@ export class ConnectionManager {
     const namedConnection = { ...connection, name };
     this.connections.set(name, namedConnection);
     this.saveConnections();
+    loggers.connection(`Connection "${name}" added: ${connection.database}@${connection.server}`);
   }
 
   /**
