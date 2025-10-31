@@ -1,6 +1,6 @@
 {
   "name": "filemaker-data-api-mcp",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "MCP server for FileMaker Data API integration with Claude Desktop",
   "type": "module",
   "main": "dist/index.js",
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fsans/FileMaker-Server-DAPI-MCP"
+    "url": "git+https://github.com/fsans/FileMaker-Server-DAPI-MCP.git"
   },
   "bugs": {
     "url": "https://github.com/fsans/FileMaker-Server-DAPI-MCP/issues"
