@@ -1,7 +1,7 @@
 {
   "name": "filemaker-data-api-mcp",
-  "version": "0.0.10",
-  "description": "MCP server for FileMaker Data API integration with Claude Desktop",
+  "version": "0.0.11",
+  "description": "Model Context Protocol (MCP) server providing FileMaker Data API integration for AI assistants",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -24,11 +24,17 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "filemaker",
+    "filemaker-server",
     "data-api",
     "rest-api",
+    "ai",
     "claude",
-    "claude-desktop"
+    "chatgpt",
+    "windsurf",
+    "cursor",
+    "llm"
   ],
   "author": "Francesc Sans <fsans@ntwk.es>",
   "license": "MIT",
