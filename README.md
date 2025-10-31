@@ -63,89 +63,81 @@ filemaker-mcp config list-connections
 
 ## Installation for AI Assistants
 
-### Claude Desktop
+### Claude Desktop (Example Configuration)
 
-1. Install globally: `npm install -g filemaker-data-api-mcp`
-2. Edit: `~/Library/Application Support/Claude/claude_desktop_config.json`
-3. Add:
+1. **Install globally:**
 
-```json
-{
-  "mcpServers": {
-    "filemaker": {
-      "command": "filemaker-mcp",
-      "args": ["start"]
-    }
-  }
-}
-```
+   ```bash
+   npm install -g filemaker-data-api-mcp
+   ```
 
-4. Restart Claude Desktop
+2. **Edit your MCP configuration file:**
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-### Windsurf IDE
+3. **Add the FileMaker MCP server:**
 
-1. Install globally: `npm install -g filemaker-data-api-mcp`
-2. Edit: `~/.windsurf/mcp.json`
-3. Add:
+   **Basic Configuration (uses CLI-configured connections):**
 
-```json
-{
-  "mcpServers": {
-    "filemaker": {
-      "command": "filemaker-mcp",
-      "args": ["start"]
-    }
-  }
-}
-```
+   ```json
+   {
+     "mcpServers": {
+       "filemaker": {
+         "command": "filemaker-mcp",
+         "args": ["start"]
+       }
+     }
+   }
+   ```
 
-4. Restart Windsurf
+   **Project-Specific Configuration (hardcoded credentials):**
 
-### Cursor IDE
+   Useful when you want to connect to a specific database without CLI setup, or for project-specific deployments:
 
-1. Install globally: `npm install -g filemaker-data-api-mcp`
-2. Edit: `~/.cursor/mcp.json`
-3. Add:
+   ```json
+   {
+     "mcpServers": {
+       "filemaker": {
+         "command": "filemaker-mcp",
+         "args": ["start"],
+         "env": {
+           "FM_SERVER": "192.168.0.24",
+           "FM_DATABASE": "Sales",
+           "FM_USER": "admin",
+           "FM_PASSWORD": "your_password",
+           "FM_VERSION": "vLatest"
+         }
+       }
+     }
+   }
+   ```
 
-```json
-{
-  "mcpServers": {
-    "filemaker": {
-      "command": "filemaker-mcp",
-      "args": ["start"]
-    }
-  }
-}
-```
+4. **Restart Claude Desktop**
 
-4. Restart Cursor
+### Other MCP-Compatible Clients
 
-### Kili IDE
+The same configuration works for other MCP-compatible AI assistants. Refer to your specific client's documentation for the MCP configuration file location:
 
-1. Install globally: `npm install -g filemaker-data-api-mcp`
-2. Edit: `~/.kili/mcp.json`
-3. Add:
+- **Windsurf IDE**: `~/.windsurf/mcp.json`
+- **Cursor IDE**: `~/.cursor/mcp.json`
+- **Kili IDE**: `~/.kili/mcp.json`
+- **Other MCP clients**: Check their documentation for MCP server configuration
 
-```json
-{
-  "mcpServers": {
-    "filemaker": {
-      "command": "filemaker-mcp",
-      "args": ["start"]
-    }
-  }
-}
-```
+The JSON configuration structure is the same across all clients - just use the appropriate file path for your client.
 
-4. Restart Kili
+### Configuration Priority
 
-### ChatGPT (via MCP Bridge)
+The MCP server uses this priority order for configuration:
 
-For ChatGPT integration, use an MCP bridge tool:
+1. **Environment variables** (highest priority) - defined in MCP config `env` block
+2. **CLI-configured connections** - stored in `~/.filemaker-mcp/config.json`
+3. **Inline credentials** (lowest priority) - passed dynamically via tool parameters
 
-1. Install globally: `npm install -g filemaker-data-api-mcp`
-2. Use with an MCP-to-API bridge (e.g., `mcp-bridge`)
-3. Configure the bridge to connect to `filemaker-mcp start`
+**When to use each approach:**
+
+- **Environment variables**: Project-specific setups, single database per project, CI/CD deployments
+- **CLI-configured connections**: Multiple databases, switching between environments, personal global setup
+- **Inline credentials**: One-off connections, testing, temporary access
 
 ### Local Development (Library)
 
@@ -278,11 +270,13 @@ manager.addConnection('mydb', {
 ### Example 1: Query Production Database
 
 **In Claude:**
-```
+
+```text
 "Show me all contacts from the production database"
 ```
 
 Claude will automatically:
+
 1. Use your configured production connection
 2. Query the Contacts layout
 3. Return all records
@@ -290,11 +284,13 @@ Claude will automatically:
 ### Example 2: Switch Between Databases
 
 **In Claude:**
-```
+
+```text
 "First show me sales records from production, then from staging"
 ```
 
 Claude will:
+
 1. Switch to production database
 2. Query sales records
 3. Switch to staging database
@@ -304,7 +300,8 @@ Claude will:
 ### Example 3: Create a Record
 
 **In Claude:**
-```
+
+```text
 "Add a new contact: John Smith, john@example.com, 555-1234"
 ```
 
@@ -313,7 +310,8 @@ Claude will create the record with the provided information.
 ### Example 4: Ad-hoc Connection
 
 **In Claude:**
-```
+
+```text
 "Connect to 192.168.0.26, database TestDB, user admin, password test123. Show me all records."
 ```
 
