@@ -1,112 +1,173 @@
 # FileMaker Data API MCP Server
 
-A Model Context Protocol (MCP) server that provides access to FileMaker databases through the FileMaker Data API. This server enables AI assistants like Claude to interact with FileMaker databases, perform CRUD operations, manage records, and execute searches.
+A Model Context Protocol (MCP) server that provides access to FileMaker databases through the FileMaker Data API. Use this with AI assistants like Claude, ChatGPT, and other MCP-compatible agents to interact with FileMaker databases, perform CRUD operations, manage records, and execute searches.
+
+## What It Does
+
+This MCP server acts as a bridge between AI assistants and FileMaker databases:
+
+- **Query FileMaker databases** - Ask Claude to retrieve records, search data, or get database metadata
+- **Manage records** - Create, update, delete, or duplicate records through natural language
+- **Multi-database support** - Switch between different FileMaker databases on the fly
+- **Execute scripts** - Run FileMaker scripts from your AI conversations
+- **Upload files** - Add files to container fields directly from conversations
+- **Set global fields** - Manage FileMaker global fields programmatically
 
 ## Features
 
-- **Authentication**: Login, logout, and session validation
-- **Metadata**: Access database, layout, and script information
-- **Records**: Create, read, update, delete, duplicate, and find records
-- **Container Fields**: Upload files to container fields (including repetitions)
-- **Global Fields**: Set global field values
-- **Scripts**: Execute FileMaker scripts with parameters
-- **Portal Data**: Access related records through portals
-
-## Version
-
-This server implements **FileMaker Data API version 1.0.3** compatible with **FileMaker Server 2025**.
+- ✅ **Authentication**: Login, logout, and session validation
+- ✅ **Metadata**: Access database, layout, and script information
+- ✅ **Records**: Create, read, update, delete, duplicate, and find records
+- ✅ **Container Fields**: Upload files to container fields (including repetitions)
+- ✅ **Global Fields**: Set global field values
+- ✅ **Scripts**: Execute FileMaker scripts with parameters
+- ✅ **Portal Data**: Access related records through portals
+- ✅ **Dynamic Connections**: Switch between multiple FileMaker databases
+- ✅ **Inline Credentials**: Connect with ad-hoc credentials without pre-configuration
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- FileMaker Server with Data API enabled
-- Valid FileMaker Server credentials
+- **Node.js** v18 or higher
+- **FileMaker Server** with Data API enabled
+- **Valid FileMaker credentials** (username/password)
 
-## Installation
+## Quick Start
 
-1. Clone or download this repository:
-
-```bash
-cd FMDAPI-MCP
-```
-
-1. Install dependencies:
+### 1. Install Globally
 
 ```bash
-npm install
+npm install -g filemaker-data-api-mcp
 ```
 
-1. Create a `.env` file based on `.env.example`:
+### 2. Configure Your Connection
 
 ```bash
-cp .env.example .env
+filemaker-mcp config add-connection production \
+  --server 192.168.0.24 \
+  --database Sales \
+  --user admin \
+  --password your_password
 ```
 
-1. Edit `.env` with your FileMaker Server configuration:
-
-```env
-FM_SERVER=192.168.0.24
-FM_VERSION=vLatest
-FM_DATABASE=Contacts
-FM_USER=admin
-FM_PASSWORD=your_password
-```
-
-1. (Optional) Configure external database credentials if you need to access FileMaker External Database Sources:
-
-```env
-FM_EXTERNAL_DATABASES='[
-  {"database":"SalesDB","username":"sales_user","password":"sales_password"},
-  {"database":"InventoryDB","username":"inventory_user","password":"inventory_password"}
-]'
-```
-
-1. Build the TypeScript code:
+### 3. Set as Default (Optional)
 
 ```bash
-npm run build
+filemaker-mcp config set-default production
 ```
 
-## Usage
-
-### Running the Server
-
-Start the MCP server:
+### 4. Verify Installation
 
 ```bash
-npm start
+filemaker-mcp config list-connections
 ```
 
-Or for development with auto-rebuild:
+## Installation for AI Assistants
 
-```bash
-npm run watch
-```
+### Claude Desktop
 
-### Configuration with Claude Desktop
-
-Add this server to your Claude Desktop configuration file:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+1. Install globally: `npm install -g filemaker-data-api-mcp`
+2. Edit: `~/Library/Application Support/Claude/claude_desktop_config.json`
+3. Add:
 
 ```json
 {
   "mcpServers": {
     "filemaker": {
-      "command": "node",
-      "args": ["/absolute/path/to/FMDAPI-MCP/dist/index.js"],
-      "env": {
-        "FM_SERVER": "192.168.0.24",
-        "FM_VERSION": "vLatest",
-        "FM_DATABASE": "Contacts",
-        "FM_USER": "admin",
-        "FM_PASSWORD": "your_password"
-      }
+      "command": "filemaker-mcp",
+      "args": ["start"]
     }
   }
 }
+```
+
+4. Restart Claude Desktop
+
+### Windsurf IDE
+
+1. Install globally: `npm install -g filemaker-data-api-mcp`
+2. Edit: `~/.windsurf/mcp.json`
+3. Add:
+
+```json
+{
+  "mcpServers": {
+    "filemaker": {
+      "command": "filemaker-mcp",
+      "args": ["start"]
+    }
+  }
+}
+```
+
+4. Restart Windsurf
+
+### Cursor IDE
+
+1. Install globally: `npm install -g filemaker-data-api-mcp`
+2. Edit: `~/.cursor/mcp.json`
+3. Add:
+
+```json
+{
+  "mcpServers": {
+    "filemaker": {
+      "command": "filemaker-mcp",
+      "args": ["start"]
+    }
+  }
+}
+```
+
+4. Restart Cursor
+
+### Kili IDE
+
+1. Install globally: `npm install -g filemaker-data-api-mcp`
+2. Edit: `~/.kili/mcp.json`
+3. Add:
+
+```json
+{
+  "mcpServers": {
+    "filemaker": {
+      "command": "filemaker-mcp",
+      "args": ["start"]
+    }
+  }
+}
+```
+
+4. Restart Kili
+
+### ChatGPT (via MCP Bridge)
+
+For ChatGPT integration, use an MCP bridge tool:
+
+1. Install globally: `npm install -g filemaker-data-api-mcp`
+2. Use with an MCP-to-API bridge (e.g., `mcp-bridge`)
+3. Configure the bridge to connect to `filemaker-mcp start`
+
+### Local Development (Library)
+
+For use as a library in your own Node.js project:
+
+```bash
+npm install filemaker-data-api-mcp
+```
+
+Then import and use:
+
+```typescript
+import { ConnectionManager } from 'filemaker-data-api-mcp';
+
+const manager = new ConnectionManager();
+manager.addConnection('mydb', {
+  server: '192.168.0.24',
+  database: 'Sales',
+  user: 'admin',
+  password: 'xxx',
+  version: 'vLatest'
+});
 ```
 
 ## Available Tools
@@ -212,92 +273,126 @@ Add this server to your Claude Desktop configuration file:
   - Parameters: `layout` (required), `scriptName` (required), `scriptParameter` (optional), `database` (optional)
   - Example: `{"layout": "Contacts", "scriptName": "UpdateRecords", "scriptParameter": "param1"}`
 
-## Example Workflow with Claude
+## Usage Examples
 
-1. **Authenticate**:
+### Example 1: Query Production Database
 
-   ```text
-   Use fm_login to connect to the FileMaker database
-   ```
+**In Claude:**
+```
+"Show me all contacts from the production database"
+```
 
-2. **Explore the Database**:
+Claude will automatically:
+1. Use your configured production connection
+2. Query the Contacts layout
+3. Return all records
 
-   ```text
-   Use fm_get_layouts to see available layouts
-   Use fm_get_layout_metadata with layout "Contacts" to see the fields
-   ```
+### Example 2: Switch Between Databases
 
-3. **Query Records**:
+**In Claude:**
+```
+"First show me sales records from production, then from staging"
+```
 
-   ```text
-   Use fm_get_records with layout "Contacts" to get all contacts
-   Use fm_find_records to search for specific records
-   ```
+Claude will:
+1. Switch to production database
+2. Query sales records
+3. Switch to staging database
+4. Query sales records
+5. Compare both results
 
-4. **Modify Data**:
+### Example 3: Create a Record
 
-   ```text
-   Use fm_create_record to add a new contact
-   Use fm_edit_record to update an existing contact
-   Use fm_delete_record to remove a contact
-   ```
+**In Claude:**
+```
+"Add a new contact: John Smith, john@example.com, 555-1234"
+```
 
-5. **Clean Up**:
+Claude will create the record with the provided information.
 
-   ```text
-   Use fm_logout to end the session
-   ```
+### Example 4: Ad-hoc Connection
 
-## Test Configuration
+**In Claude:**
+```
+"Connect to 192.168.0.26, database TestDB, user admin, password test123. Show me all records."
+```
 
-The included `DataAPI.postman_collection.json` contains test data with the following configuration:
+Claude will connect with inline credentials without pre-configuration.
 
-- **Server**: 192.168.0.24
-- **Version**: vLatest
-- **Database**: Contacts (example)
-- **User**: admin
-- **Password**: wakawaka
+## Configuration Management
+
+### Add a Connection
+
+```bash
+filemaker-mcp config add-connection staging \
+  --server 192.168.0.25 \
+  --database SalesTest \
+  --user admin \
+  --password staging_password
+```
+
+### List All Connections
+
+```bash
+filemaker-mcp config list-connections
+```
+
+### Set Default Connection
+
+```bash
+filemaker-mcp config set-default production
+```
+
+### Remove a Connection
+
+```bash
+filemaker-mcp config remove-connection staging
+```
+
+### View Configuration
+
+```bash
+filemaker-mcp config show
+```
 
 ## Security Notes
 
-- The server disables SSL certificate verification by default for development. For production, enable SSL verification by modifying the `FileMakerAPIClient` constructor.
-- Store credentials securely and never commit `.env` files to version control.
-- Use environment variables for sensitive configuration in production environments.
-
-## API Response Format
-
-All FileMaker Data API responses follow this structure:
-
-```json
-{
-  "response": {
-    // Response data here
-  },
-  "messages": [
-    {
-      "code": "0",
-      "message": "OK"
-    }
-  ]
-}
-```
-
-Error responses include error codes and messages in the `messages` array.
+- Credentials are stored in `~/.filemaker-mcp/config.json` with restricted permissions (0o600)
+- Passwords are masked in list/show commands
+- Never share your config file or commit it to version control
+- Use strong passwords for FileMaker Server accounts
+- For production, consider using environment variables instead of stored credentials
 
 ## Troubleshooting
 
-- **Connection errors**: Verify FM_SERVER is accessible and FileMaker Server is running
-- **Authentication errors**: Check FM_USER and FM_PASSWORD are correct
-- **Layout not found**: Ensure the layout name matches exactly (case-sensitive)
-- **Session expired**: Call fm_login again to create a new session
+### "Connection not found" error
 
-## Development
+```bash
+# List your connections
+filemaker-mcp config list-connections
 
-To contribute or modify:
+# Add the connection if missing
+filemaker-mcp config add-connection mydb --server ... --database ... --user ... --password ...
+```
 
-1. Edit TypeScript files in `src/`
-2. Build with `npm run build`
-3. Test with your FileMaker Server
+### "MCP server not responding" in Claude
+
+1. Verify installation: `filemaker-mcp config list-connections`
+2. Rebuild if needed: `npm install -g filemaker-data-api-mcp@latest`
+3. Restart your AI assistant (Claude, Windsurf, etc.)
+
+### "Authentication failed" error
+
+- Verify FileMaker Server is running
+- Check username and password are correct
+- Ensure Data API is enabled on FileMaker Server
+- Verify network connectivity to FileMaker Server
+
+### Permission denied on config file
+
+```bash
+chmod 600 ~/.filemaker-mcp/config.json
+```
 
 ## License
 
