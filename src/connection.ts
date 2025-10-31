@@ -153,6 +153,11 @@ export class ConnectionManager {
       throw new Error("Connection name is required");
     }
 
+    // Check if connection already exists
+    if (this.connections.has(name)) {
+      throw new Error(`Connection "${name}" already exists`);
+    }
+
     const validation = this.validateConnection(connection);
     if (!validation.valid) {
       throw new Error(`Invalid connection: ${validation.errors.join(", ")}`);

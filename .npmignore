@@ -1,0 +1,60 @@
+# Development files
+node_modules/
+src/
+tests/
+.git/
+.gitignore
+.env*
+.claude/
+.kilocode/
+logs/
+
+# Configuration files
+tsconfig.json
+jest.config.js
+.prettierrc
+.eslintrc*
+
+# Documentation (keep only README.md)
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tsbuildinfo
+
+# Other
+BRANCH_SUMMARY.md
+CHANGELOG.md
+DEPLOYMENT_*.md
+DEPLOYMENT_CHECKLIST.md
+DataAPI.postman_collection.json
+FILEMAKERDAPI_1-0-3.json
+GUIDES_INDEX.md
+LAUNCHD_SETUP.md
+NETWORK_TRANSPORT.md
+NPM_EXTENSION_IMPLEMENTATION.md
+NPM_EXTENSION_PLAN.md
+PHASE_*.md
+QUICK_REFERENCE.md
+QUICK_START_NPM.md
+TEST_DEPLOY_SUMMARY.md
+com.filemaker.mcp.plist
+validate-config.sh
+USAGE_GUIDE.md
+GETTING_STARTED.md
+NPM_PUBLISHING_STATUS.md

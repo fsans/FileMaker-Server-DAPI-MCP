@@ -39,17 +39,37 @@ export interface AppConfig {
   defaultConnection?: string;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), ".filemaker-mcp");
-const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
-const ENV_FILE = path.join(CONFIG_DIR, ".env");
+/**
+ * Get config directory (dynamically resolves home directory)
+ * Uses process.env.HOME for testability
+ */
+export function getConfigDir(): string {
+  const homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir();
+  return path.join(homeDir, ".filemaker-mcp");
+}
+
+/**
+ * Get config file path
+ */
+function getConfigFile(): string {
+  return path.join(getConfigDir(), "config.json");
+}
+
+/**
+ * Get env file path
+ */
+function getEnvFile(): string {
+  return path.join(getConfigDir(), ".env");
+}
 
 /**
  * Load configuration from file
  */
 export function loadConfigFile(): Partial<AppConfig> {
-  if (fs.existsSync(CONFIG_FILE)) {
+  const configFile = getConfigFile();
+  if (fs.existsSync(configFile)) {
     try {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+      return JSON.parse(fs.readFileSync(configFile, "utf-8"));
     } catch (error) {
       console.error("Error reading config file:", error);
       return {};
@@ -62,19 +82,22 @@ export function loadConfigFile(): Partial<AppConfig> {
  * Save configuration to file
  */
 export function saveConfigFile(config: AppConfig): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  const configDir = getConfigDir();
+  const configFile = getConfigFile();
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
   }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  fs.chmodSync(CONFIG_FILE, 0o600); // Restrict permissions for security
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+  fs.chmodSync(configFile, 0o600); // Restrict permissions for security
 }
 
 /**
  * Load environment variables from .env file
  */
 export function loadEnvFile(): void {
-  if (fs.existsSync(ENV_FILE)) {
-    dotenv.config({ path: ENV_FILE });
+  const envFile = getEnvFile();
+  if (fs.existsSync(envFile)) {
+    dotenv.config({ path: envFile });
   }
 }
 
@@ -160,31 +183,24 @@ export function validateConfig(config: AppConfig): { valid: boolean; errors: str
 }
 
 /**
- * Get configuration directory
- */
-export function getConfigDir(): string {
-  return CONFIG_DIR;
-}
-
-/**
  * Get configuration file path
  */
 export function getConfigFilePath(): string {
-  return CONFIG_FILE;
+  return getConfigFile();
 }
 
 /**
  * Get environment file path
  */
 export function getEnvFilePath(): string {
-  return ENV_FILE;
+  return getEnvFile();
 }
 
 /**
  * Check if configuration exists
  */
 export function hasConfig(): boolean {
-  return fs.existsSync(CONFIG_FILE);
+  return fs.existsSync(getConfigFile());
 }
 
 /**
@@ -208,11 +224,30 @@ export function getConnection(name: string): Connection | null {
  */
 export function addConnection(name: string, connection: Connection): void {
   const config = loadConfigFile() as AppConfig;
-  
+
   if (!config.connections) {
     config.connections = {};
   }
-  
+
+  // Check if connection already exists
+  if (config.connections[name]) {
+    throw new Error(`Connection "${name}" already exists`);
+  }
+
+  // Validate connection data
+  if (!connection.server || connection.server.trim() === "") {
+    throw new Error("Server is required");
+  }
+  if (!connection.database || connection.database.trim() === "") {
+    throw new Error("Database is required");
+  }
+  if (!connection.user || connection.user.trim() === "") {
+    throw new Error("User is required");
+  }
+  if (!connection.password || connection.password.trim() === "") {
+    throw new Error("Password is required");
+  }
+
   config.connections[name] = { ...connection, name };
   saveConfigFile(config);
 }
@@ -222,16 +257,19 @@ export function addConnection(name: string, connection: Connection): void {
  */
 export function removeConnection(name: string): void {
   const config = loadConfigFile() as AppConfig;
-  
-  if (config.connections && config.connections[name]) {
-    delete config.connections[name];
+
+  // Check if connection exists
+  if (!config.connections || !config.connections[name]) {
+    throw new Error(`Connection "${name}" not found`);
   }
-  
+
+  delete config.connections[name];
+
   // If this was the default connection, clear it
   if (config.defaultConnection === name) {
     config.defaultConnection = undefined;
   }
-  
+
   saveConfigFile(config);
 }
 
