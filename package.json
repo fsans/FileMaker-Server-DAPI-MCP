@@ -1,6 +1,6 @@
 {
   "name": "filemaker-data-api-mcp",
-  "version": "0.0.7-BETA",
+  "version": "0.0.9",
   "description": "MCP server for FileMaker Data API integration with Claude Desktop",
   "type": "module",
   "main": "dist/index.js",
