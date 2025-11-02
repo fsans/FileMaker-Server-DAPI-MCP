@@ -260,7 +260,7 @@ filemaker-mcp config show
 ### Local Development
 
 ```bash
-# Clone repository
+# Clone repository (update URL after publishing)
 git clone https://github.com/yourusername/filemaker-data-api-mcp.git
 cd filemaker-data-api-mcp
 
@@ -294,7 +294,7 @@ manager.addConnection('mydb', {
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](docs/development/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See the [Development Guide](docs/development/) for implementation details and the [Testing Guide](docs/development/phase-2g-testing.md) for testing guidelines.
 
 ## License
 
@@ -308,9 +308,9 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/filemaker-data-api-mcp/issues)
 - **Documentation**: [docs/](docs/)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **Issues**: GitHub Issues (update URL after publishing)
 
 ---
 
