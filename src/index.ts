@@ -13,6 +13,7 @@ import FormData from "form-data";
 import fs from "fs";
 import { setupTransport, getTransportConfig } from "./transport.js";
 import { getConnectionManager } from "./connection.js";
+import { getTokenManager } from "./token-manager.js";
 import { configurationTools, configurationToolHandlers } from "./tools/configuration.js";
 import { connectionTools, connectionToolHandlers } from "./tools/connection.js";
 import { loggers, logRequest, logResponse, logError, logTiming, createTimedLogger } from "./logger.js";
@@ -36,6 +37,8 @@ class FileMakerAPIClient {
   private externalDatabases: ExternalDatabase[] = [];
   private token: string | null = null;
   private axiosInstance: AxiosInstance;
+  private tokenManager: ReturnType<typeof getTokenManager>;
+  private readonly MAX_RETRY_ATTEMPTS = 2;
 
   constructor() {
     loggers.client("Initializing FileMaker API Client");
@@ -44,6 +47,7 @@ class FileMakerAPIClient {
     this.database = process.env.FM_DATABASE || "";
     this.username = process.env.FM_USER || "";
     this.password = process.env.FM_PASSWORD || "";
+    this.tokenManager = getTokenManager();
 
     loggers.client(`Server: ${this.baseUrl}, Version: ${this.version}, Database: ${this.database}`);
 
@@ -87,6 +91,40 @@ class FileMakerAPIClient {
     return headers;
   }
 
+  /**
+   * Make a request with automatic 401 retry and token refresh
+   */
+  private async makeRequestWithRetry<T>(
+    requestFn: () => Promise<T>,
+    retryCount: number = 0
+  ): Promise<T> {
+    try {
+      return await requestFn();
+    } catch (error: any) {
+      // Check if it's a 401 Unauthorized error
+      if (error.response?.status === 401 && retryCount < this.MAX_RETRY_ATTEMPTS) {
+        loggers.client(`Received 401 error, attempting to refresh token (attempt ${retryCount + 1}/${this.MAX_RETRY_ATTEMPTS})`);
+
+        try {
+          // Invalidate current token
+          this.tokenManager.invalidateToken(this.baseUrl, this.database, this.username);
+          this.token = null;
+
+          // Re-authenticate
+          await this.login();
+
+          // Retry the original request
+          return await this.makeRequestWithRetry(requestFn, retryCount + 1);
+        } catch (loginError) {
+          loggers.client(`Failed to refresh token: ${loginError instanceof Error ? loginError.message : String(loginError)}`);
+          throw loginError;
+        }
+      }
+
+      throw error;
+    }
+  }
+
   // Authentication
   async login(
     database?: string,
@@ -98,6 +136,16 @@ class FileMakerAPIClient {
     const db = database || this.database;
     const user = username || this.username;
     const pass = password || this.password;
+
+    // Check if we have a cached token
+    const cachedToken = this.tokenManager.getToken(this.baseUrl, db, user);
+    if (cachedToken) {
+      loggers.client(`Using cached token for ${db}@${this.baseUrl}`);
+      this.token = cachedToken;
+      if (database) this.database = database;
+      logTiming();
+      return { response: { token: cachedToken } };
+    }
 
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/sessions`;
     const auth = Buffer.from(`${user}:${pass}`).toString("base64");
@@ -125,8 +173,13 @@ class FileMakerAPIClient {
       this.token = response.data.response.token;
       if (database) this.database = database;
 
+      // Cache the token (15 minute default TTL)
+      if (this.token) {
+        this.tokenManager.cacheToken(this.token, this.baseUrl, db, user, 15 * 60 * 1000);
+      }
+
       logResponse(loggers.client, loggers.clientVerbose, "POST", url, response.status, response.data);
-      loggers.client(`Login successful, token acquired`);
+      loggers.client(`Login successful, token acquired and cached`);
       logTiming();
 
       return response.data;
@@ -149,6 +202,9 @@ class FileMakerAPIClient {
 
     try {
       const response = await this.axiosInstance.delete(url);
+      
+      // Invalidate cached token
+      this.tokenManager.invalidateToken(this.baseUrl, this.database, this.username);
       this.token = null;
 
       logResponse(loggers.client, loggers.clientVerbose, "DELETE", url, response.status, response.data);
@@ -219,10 +275,13 @@ class FileMakerAPIClient {
   ): Promise<any> {
     const db = database || this.database;
     const url = `https://${this.baseUrl}/fmi/data/${this.version}/databases/${db}/layouts/${layout}/records?_offset=${offset}&_limit=${limit}`;
-    const response = await this.axiosInstance.get(url, {
-      headers: this.getHeaders(),
+    
+    return this.makeRequestWithRetry(async () => {
+      const response = await this.axiosInstance.get(url, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
     });
-    return response.data;
   }
 
   async getRecordById(
