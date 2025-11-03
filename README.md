@@ -1,20 +1,29 @@
 # FileMaker Data API MCP Server
 
-A Model Context Protocol (MCP) server that provides AI assistants like Claude with direct access to FileMaker databases through the FileMaker Data API.
+A Model Context Protocol (MCP) server that provides AI agents with direct access to FileMaker databases through the FileMaker Data API. Compatible with Claude Desktop, Claude Code Console, Windsurf, Cursor, Cline, and other MCP-enabled AI assistants.
 
 [![npm version](https://badge.fury.io/js/filemaker-data-api-mcp.svg)](https://www.npmjs.com/package/filemaker-data-api-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## What It Does
 
-This MCP server acts as a bridge between AI assistants and FileMaker databases, enabling natural language interactions with your FileMaker data:
+This MCP server acts as a bridge between AI agents and FileMaker databases, enabling natural language interactions with your FileMaker data and database structure:
 
-- **Query databases** - Ask Claude to retrieve, search, or analyze FileMaker records
-- **Manage records** - Create, update, delete records through conversation
-- **Multi-database support** - Switch between different FileMaker databases dynamically
-- **Execute scripts** - Run FileMaker scripts from AI conversations
-- **Upload files** - Add files to container fields
+### Data Interaction
+- **Query databases** - Retrieve, search, and analyze FileMaker records
+- **Manage records** - Create, update, delete, and duplicate records through conversation
+- **Execute scripts** - Run FileMaker scripts with parameters
+- **Upload files** - Add files to container fields (including repetitions)
 - **Set global fields** - Manage FileMaker global fields programmatically
+- **Multi-database support** - Switch between different FileMaker databases dynamically
+
+### Database Introspection
+- **Discover structure** - AI agents can introspect database schemas, layouts, and field definitions
+- **Understand relationships** - Access portal and related table information
+- **Architect solutions** - Enable AI to design and implement FileMaker applications through natural language
+- **Metadata access** - Get complete information about layouts, fields, value lists, and scripts
+
+This introspection capability allows AI agents to understand your database architecture and help you build, modify, and optimize FileMaker solutions through simple conversation.
 
 ## Quick Start
 
@@ -38,13 +47,13 @@ filemaker-mcp config add-connection production \
 filemaker-mcp config set-default production
 ```
 
-### Configure Claude Desktop
+### Configure Your AI Agent
 
-Edit your Claude Desktop configuration file:
+#### Claude Desktop
+
+Edit your configuration file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-Add this configuration:
 
 ```json
 {
@@ -57,7 +66,22 @@ Add this configuration:
 }
 ```
 
-Restart Claude Desktop and you're ready!
+#### Windsurf / Cursor / Cline
+
+Add to your MCP settings configuration:
+
+```json
+{
+  "mcpServers": {
+    "filemaker": {
+      "command": "filemaker-mcp",
+      "args": ["start"]
+    }
+  }
+}
+```
+
+Restart your AI agent and you're ready!
 
 ## Features
 
@@ -84,45 +108,66 @@ Restart Claude Desktop and you're ready!
 
 ### Example 1: Query Your Database
 
-**In Claude:**
+**You ask:**
 ```
 "Show me all contacts from the production database"
 ```
 
-Claude automatically connects and retrieves the data.
+The AI agent automatically connects and retrieves the data.
 
-### Example 2: Switch Between Databases
+### Example 2: Database Introspection
 
-**In Claude:**
+**You ask:**
+```
+"What is the structure of the Contacts layout? Show me all fields and their types."
+```
+
+The AI agent introspects the database schema and provides detailed field information.
+
+### Example 3: Switch Between Databases
+
+**You ask:**
 ```
 "Compare sales records from production and staging databases"
 ```
 
-Claude switches between connections and compares the data.
+The AI agent switches between connections and compares the data.
 
-### Example 3: Create Records
+### Example 4: Create Records
 
-**In Claude:**
+**You ask:**
 ```
 "Add a new contact: John Smith, john@example.com, 555-1234"
 ```
 
-Claude creates the record with the provided information.
+The AI agent creates the record with the provided information.
 
-### Example 4: Ad-hoc Connection
+### Example 5: Ad-hoc Connection
 
-**In Claude:**
+**You ask:**
 ```
 "Connect to 192.168.0.26, database TestDB, user admin, password test123. Show all records."
 ```
 
-Claude connects with inline credentials and queries the database.
+The AI agent connects with inline credentials and queries the database.
+
+### Example 6: Solution Architecture
+
+**You ask:**
+```
+"Design a customer management system with contacts, orders, and products. Create the layouts and suggest field definitions."
+```
+
+The AI agent uses database introspection to understand your current structure and helps architect the solution.
 
 ## Configuration
 
 ### CLI Commands
 
 ```bash
+# Initial setup
+filemaker-mcp setup
+
 # Connection management
 filemaker-mcp config add-connection <name> [options]
 filemaker-mcp config remove-connection <name>
@@ -131,7 +176,10 @@ filemaker-mcp config set-default <name>
 filemaker-mcp config show
 
 # Start server
-filemaker-mcp start [--connection <name>]
+filemaker-mcp start
+
+# Configure Claude Desktop
+filemaker-mcp configure-claude
 ```
 
 ### Environment Variables
@@ -164,7 +212,7 @@ You can also configure via environment variables in the Claude Desktop config:
 
 ## Available Tools
 
-The MCP server provides 29 tools for interacting with FileMaker:
+The MCP server provides 28 tools for interacting with FileMaker:
 
 ### Authentication (3 tools)
 - `fm_login` - Authenticate with FileMaker Server
@@ -197,16 +245,19 @@ The MCP server provides 29 tools for interacting with FileMaker:
 ### Scripts (1 tool)
 - `fm_execute_script` - Execute FileMaker script
 
-### Connection Management (9 tools)
-- `fm_config_add_connection` - Add connection
+### Configuration Tools (5 tools)
+
+- `fm_config_add_connection` - Add predefined connection
 - `fm_config_remove_connection` - Remove connection
-- `fm_config_list_connections` - List connections
-- `fm_config_get_connection` - Get connection details
-- `fm_config_set_default_connection` - Set default
+- `fm_config_list_connections` - List all configured connections
+- `fm_config_get_connection` - Get connection details (password masked)
+- `fm_config_set_default_connection` - Set default connection
+
+### Connection Tools (4 tools)
 - `fm_set_connection` - Switch to predefined connection
-- `fm_connect` - Connect with inline credentials
+- `fm_connect` - Connect with inline credentials (one-time)
 - `fm_list_connections` - List available connections
-- `fm_get_current_connection` - Show current connection
+- `fm_get_current_connection` - Show current connection details
 
 ## Prerequisites
 
