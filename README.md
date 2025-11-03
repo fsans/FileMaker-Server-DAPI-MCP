@@ -269,6 +269,7 @@ The MCP server provides 28 tools for interacting with FileMaker:
 
 - **[Getting Started Guide](docs/guides/getting-started.md)** - Detailed setup instructions
 - **[User Guide](docs/guides/user-guide.md)** - Complete usage documentation
+- **[Token Lifecycle Management](docs/guides/TOKEN_LIFECYCLE.md)** - Token caching, refresh, and error recovery
 - **[Deployment Guide](docs/guides/deployment.md)** - Production deployment instructions
 - **[API Reference](docs/guides/api-reference.md)** - All tools documented
 - **[Development Guide](docs/development/)** - For contributors
