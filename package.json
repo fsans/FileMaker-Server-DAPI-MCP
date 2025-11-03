@@ -1,6 +1,6 @@
 {
   "name": "filemaker-data-api-mcp",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Model Context Protocol (MCP) server providing FileMaker Data API integration with database introspection for AI agents. Compatible with Claude, Windsurf, Cursor, Cline, and other MCP-enabled assistants.",
   "type": "module",
   "main": "dist/index.js",
